@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="cc.noraneko.NoranekoDslTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-05-10T15:12:11.210Z" hostname="sonhoyeongs-MacBook-Pro.local" time="0.026">
+  <properties/>
+  <testcase name="router matches method and exact path()" classname="cc.noraneko.NoranekoDslTest" time="0.019"/>
+  <testcase name="start delegates to the configured engine()" classname="cc.noraneko.NoranekoDslTest" time="0.001"/>
+  <testcase name="route builder creates route definitions without owning runtime lookup()" classname="cc.noraneko.NoranekoDslTest" time="0.005"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
