@@ -1,0 +1,23 @@
+# Gradle
+.gradle/
+build/
+
+# IntelliJ IDEA
+.idea/
+*.iml
+out/
+
+# Kotlin / JVM
+*.class
+*.jar
+*.war
+*.ear
+
+# Logs
+*.log
+
+# Environment / secrets
+.env
+*.env
+application-secret.yml
+application-local.yml
