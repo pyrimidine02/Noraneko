@@ -1,3 +1,4 @@
+import cc.noraneko.http.Response
 import cc.noraneko.netty.NettyEngine
 import cc.noraneko.noraneko
 
@@ -10,12 +11,16 @@ fun main() {
         engine(NettyEngine())
 
         routes {
-            get("/") { call ->
-                call.text("Hello, noraneko")
+            get("/") {
+                Response.text("Hello, noraneko")
             }
 
-            get("/health") { call ->
-                call.text("OK")
+            get("/health") {
+                Response.text("OK")
+            }
+
+            get("/users/{id}") { call ->
+                Response.text("user id = ${call.requirePathParam("id")}")
             }
         }
     }.start()

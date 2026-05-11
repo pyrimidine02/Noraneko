@@ -1,5 +1,6 @@
 package cc.noraneko.netty
 
+import cc.noraneko.http.Response
 import cc.noraneko.noraneko
 import java.io.IOException
 import java.net.ServerSocket
@@ -23,16 +24,16 @@ class NettyEngineTest {
             engine(engine)
 
             routes {
-                get("/") { call ->
-                    call.text("Hello, noraneko")
+                get("/") {
+                    Response.text("Hello, noraneko")
                 }
 
-                get("/health") { call ->
-                    call.text("OK")
+                get("/health") {
+                    Response.text("OK")
                 }
 
                 get("/inspect") { call ->
-                    call.text(
+                    Response.text(
                         listOf(
                             call.request.queryParam("tag").orEmpty(),
                             call.request.queryParams("tag").joinToString(","),

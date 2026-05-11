@@ -22,10 +22,10 @@ import io.netty.handler.codec.http.DefaultFullHttpResponse
 import io.netty.handler.codec.http.FullHttpRequest
 import io.netty.handler.codec.http.HttpHeaderNames
 import io.netty.handler.codec.http.HttpHeaderValues
-import io.netty.handler.codec.http.HttpUtil
 import io.netty.handler.codec.http.HttpObjectAggregator
 import io.netty.handler.codec.http.HttpResponseStatus
 import io.netty.handler.codec.http.HttpServerCodec
+import io.netty.handler.codec.http.HttpUtil
 import io.netty.handler.codec.http.HttpVersion
 import io.netty.handler.codec.http.QueryStringDecoder
 import io.netty.util.CharsetUtil
@@ -97,15 +97,15 @@ class NettyEngine : HttpEngine {
         override fun channelRead0(context: ChannelHandlerContext, request: FullHttpRequest) {
             val method = request.method().toNoranekoMethod()
             if (method == null) {
-                context.writeAndFlush(textResponse(405, "Method Not Allowed"))
+                context.writeAndFlush(toNettyResponse(Response.methodNotAllowed()))
                     .addListener(ChannelFutureListener.CLOSE)
                 return
             }
 
             val decoder = QueryStringDecoder(request.uri())
-            val route = application.router.find(method, decoder.path())
-            if (route == null) {
-                context.writeAndFlush(textResponse(404, "Not Found"))
+            val match = application.router.find(method, decoder.path())
+            if (match == null) {
+                context.writeAndFlush(toNettyResponse(Response.notFound()))
                     .addListener(ChannelFutureListener.CLOSE)
                 return
             }
@@ -121,40 +121,39 @@ class NettyEngine : HttpEngine {
                         header.key to header.value
                     },
                 ),
-                response = Response(),
+                pathParams = match.pathParams,
             )
 
             try {
-                route.handle(call)
-                val response = textResponse(
-                    status = call.response.status,
-                    body = call.response.body,
-                    contentType = call.response.contentType,
-                )
+                val noranekoResponse = match.route.handle(call)
+                val response = toNettyResponse(noranekoResponse)
 
                 if (HttpUtil.isKeepAlive(request)) {
                     response.headers()[HttpHeaderNames.CONNECTION] = HttpHeaderValues.KEEP_ALIVE
                     context.writeAndFlush(response)
                 } else {
-                    context.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE)
+                    context.writeAndFlush(response)
+                        .addListener(ChannelFutureListener.CLOSE)
                 }
             } catch (error: Throwable) {
-                context.writeAndFlush(textResponse(500, "Internal Server Error"))
+                context.writeAndFlush(toNettyResponse(Response.internalServerError()))
                     .addListener(ChannelFutureListener.CLOSE)
             }
         }
 
-        private fun Route.handle(call: ApplicationCall) {
+        private fun Route.handle(call: ApplicationCall): Response {
             val latch = CountDownLatch(1)
             var failure: Throwable? = null
+            var response: Response? = null
 
             handler.startCoroutine(
                 call,
-                object : Continuation<Unit> {
+                object : Continuation<Response> {
                     override val context = EmptyCoroutineContext
 
-                    override fun resumeWith(result: Result<Unit>) {
+                    override fun resumeWith(result: Result<Response>) {
                         failure = result.exceptionOrNull()
+                        response = result.getOrNull()
                         latch.countDown()
                     }
                 },
@@ -162,27 +161,35 @@ class NettyEngine : HttpEngine {
 
             latch.await()
             failure?.let { throw it }
+
+            return requireNotNull(response) {
+                "Handler completed without a Response."
+            }
         }
 
-        private fun io.netty.handler.codec.http.HttpMethod.toNoranekoMethod(): HttpMethod? =
-            runCatching { HttpMethod.valueOf(name()) }.getOrNull()
+        private fun io.netty.handler.codec.http.HttpMethod.toNoranekoMethod(): HttpMethod? {
+            return runCatching { HttpMethod.valueOf(name()) }.getOrNull()
+        }
 
-        private fun textResponse(
-            status: Int,
-            body: String,
-            contentType: String = "text/plain",
-        ): DefaultFullHttpResponse {
-            val content = Unpooled.copiedBuffer(body, CharsetUtil.UTF_8)
-            val response = DefaultFullHttpResponse(
+        private fun toNettyResponse(response: Response): DefaultFullHttpResponse {
+            val content = Unpooled.copiedBuffer(response.body, CharsetUtil.UTF_8)
+
+            val nettyResponse = DefaultFullHttpResponse(
                 HttpVersion.HTTP_1_1,
-                HttpResponseStatus.valueOf(status),
+                HttpResponseStatus.valueOf(response.status),
                 content,
             )
 
-            response.headers()[HttpHeaderNames.CONTENT_TYPE] = "$contentType; charset=utf-8"
-            response.headers()[HttpHeaderNames.CONTENT_LENGTH] = content.readableBytes()
+            nettyResponse.headers()[HttpHeaderNames.CONTENT_TYPE] =
+                "${response.contentType}; charset=utf-8"
+            nettyResponse.headers()[HttpHeaderNames.CONTENT_LENGTH] =
+                content.readableBytes()
 
-            return response
+            for ((name, value) in response.headers) {
+                nettyResponse.headers()[name] = value
+            }
+
+            return nettyResponse
         }
     }
 

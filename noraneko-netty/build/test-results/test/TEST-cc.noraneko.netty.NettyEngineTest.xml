@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="cc.noraneko.netty.NettyEngineTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-05-10T15:12:12.589Z" hostname="sonhoyeongs-MacBook-Pro.local" time="0.378">
+<testsuite name="cc.noraneko.netty.NettyEngineTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-05-11T16:14:21.024Z" hostname="sonhoyeongs-MacBook-Pro.local" time="0.171">
   <properties/>
-  <testcase name="serves text responses for exact GET routes()" classname="cc.noraneko.netty.NettyEngineTest" time="0.378"/>
+  <testcase name="serves text responses for exact GET routes()" classname="cc.noraneko.netty.NettyEngineTest" time="0.171"/>
   <system-out><![CDATA[]]></system-out>
   <system-err><![CDATA[]]></system-err>
 </testsuite>
